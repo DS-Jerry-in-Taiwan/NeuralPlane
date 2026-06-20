@@ -227,3 +227,78 @@ class CreateIssueResult:
     raw_response: dict[str, Any]
     success: bool
     error_message: str | None = None
+
+
+# ----------------------------------------------------------------------
+# WorkContextResult (Development Kickoff)
+# ----------------------------------------------------------------------
+
+
+import re as _re
+
+
+def generate_branch_name(issue_key: str, title: str) -> str:
+    """Generate a git branch name from a Plane issue key and title.
+
+    Parameters
+    ----------
+    issue_key:
+        Plane issue key e.g. "NP-123".
+    title:
+        Task title e.g. "建立會員登入 API".
+
+    Returns
+    -------
+    str
+        Lowercase branch name e.g. "np-123-login-api".
+    """
+    slug = title.strip().lower()
+    slug = _re.sub(r'[^a-z0-9]+', '-', slug)
+    slug = slug.strip('-')
+    slug = slug[:30]
+    return f"{issue_key.lower()}-{slug}"
+
+
+@dataclass
+class WorkContextResult:
+    """Result of the Development Kickoff orchestration.
+
+    Attributes
+    ----------
+    plane_success:
+        Whether the Plane issue was created successfully.
+    plane_issue_key:
+        Human-readable issue key e.g. "NP-123".
+    plane_issue_url:
+        Full URL to the issue in Plane.
+    plane_issue_id:
+        The Plane work-item UUID.
+    plane_error:
+        Error message if Plane creation failed (no secrets).
+    github_success:
+        Whether the GitHub branch was created successfully.
+    github_branch_name:
+        Branch name e.g. "np-123-login-api".
+    github_repo:
+        Repository name e.g. "owner/repo".
+    github_error:
+        Error message if GitHub branch creation failed (no secrets).
+    overall_success:
+        True only if both Plane and GitHub succeeded.
+    checkout_instruction:
+        Human-readable checkout command e.g. "git checkout np-123-login-api".
+    """
+
+    plane_success: bool
+    plane_issue_key: str | None = None
+    plane_issue_url: str | None = None
+    plane_issue_id: str | None = None
+    plane_error: str | None = None
+
+    github_success: bool = False
+    github_branch_name: str | None = None
+    github_repo: str | None = None
+    github_error: str | None = None
+
+    overall_success: bool = False
+    checkout_instruction: str | None = None
