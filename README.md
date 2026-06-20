@@ -78,6 +78,7 @@ flowchart TB
 | 模組 | 責任 | 輸入 | 輸出 |
 |:----|:----|:----|:----|
 | **Planning Parser** | 將討論拆成任務 | 討論摘要 / Sprint 目標 | Task 草稿、DoD 清單 |
+| **Development Kickoff** | 自動建立 Plane issue + GitHub branch | 自然語言需求 | WorkContextResult（issue key、branch name、checkout 指令） |
 | **Plane Connector** | 建立/更新 Issue | Task 草稿、DoD | Plane Issue ID、狀態 |
 | **GitHub Connector** | 接收 PR/Commit 事件 | GitHub webhook/API | 事件路由 |
 | **Sync Engine** | PR ↔ Plane 狀態對應 | PR 狀態、Plane Issue | Plane 狀態更新 |
@@ -133,16 +134,57 @@ flowchart TB
 | Phase | 內容 | 狀態 |
 |:----|:----|:----:|
 | Phase 0 | Plane/GitHub API 可行性確認 | ✅ 完成 |
-| Phase 1 | AI Task + DoD 生成 | 🟡 Conditional GO |
-| Phase 2 | PR 狀態同步 Plane | 🟢 GO |
+| Phase 1 | AI Task + DoD 生成 | ✅ 完成 |
+| Phase 2 | Plane issue creation + CLI | ✅ 完成 |
+| Phase 2.5 | Development Kickoff Context — 自動建立 GitHub branch | ✅ 完成 |
 | Phase 3 | AI PR DoD 驗收留言 | 🟡 Conditional GO |
 | Phase 4 | Reporting | 📋 規劃 |
 | Phase 5 | E2E Pilot | 📋 規劃 |
 
+## Development Kickoff Context
+
+從 SM + Dev 討論完成到開發起點之間，NeuralPlane 會自動完成兩件事：
+
+1. **建立 Plane issue**（含 DoD、priority、labels）
+2. **建立 GitHub branch**（branch name 自動從 issue key + title 產生）
+
+### 使用方式
+
+```bash
+# 完整流程：解析需求 → Plane issue → GitHub branch
+python -m src.neuralplane.cli_kickoff \
+  --input task.txt \
+  --provider openai \
+  --live \
+  --github-repo DS-Jerry-in-Taiwan/NeuralPlane
+
+# 只開 issue 不開 branch
+python -m src.neuralplane.cli_kickoff \
+  --input task.txt \
+  --live \
+  --no-branch
+
+# 預覽（不呼叫任何 API）
+python -m src.neuralplane.cli_kickoff \
+  --input task.txt \
+  --dry-run
+```
+
+### Branch Name 規則
+
+輸入「建立會員登入 API」+ issue key `NP-123` → branch `np-123-api-jwt-bcrypt-rate-limiting`
+
+### 設計原則
+
+- **stdlib only** — GitHub client 只使用 `urllib.request`，無外部依賴
+- **Partial success** — Plane 成功但 GitHub 失敗時，清楚標示哪個環節出錯
+- **Branch 已存在** — 回報錯誤不覆蓋
+- **Secret hygiene** — API key / token 永不洩漏到 log 或 error message
+
+---
+
 ### 當前 Blockers（需 User 提供）
 
-- Plane API token（`X-API-Key`）
-- Plane workspace slug & project ID
 - GitHub webhook endpoint URL（可用 ngrok）
 
 ---
@@ -157,14 +199,45 @@ NeuralPlane/
 ├── docs/agent_context/
 │   ├── neuralplane_mvp/              # 總體規劃
 │   │   └── task_plan.md
-│   └── neuralplane_phase0/           # Phase 0 spike 文件
+│   ├── neuralplane_phase0/           # Phase 0 spike 文件
+│   │   ├── task_plan.md
+│   │   ├── developer_prompt.md
+│   │   ├── development_log.md
+│   │   ├── api_capability_matrix.md
+│   │   ├── event_samples.md
+│   │   ├── linking_strategy.md
+│   │   └── phase0_spike_report.md
+│   └── development_kickoff/          # Development Kickoff Context
 │       ├── task_plan.md
 │       ├── developer_prompt.md
-│       ├── development_log.md
-│       ├── api_capability_matrix.md
-│       ├── event_samples.md
-│       ├── linking_strategy.md
-│       └── phase0_spike_report.md
+│       └── development_log.md
+├── src/neuralplane/
+│   ├── __init__.py
+│   ├── ai_parser.py                  # 自然語言 → TaskDraft
+│   ├── models.py                     # TaskDraft, CreateIssueResult, WorkContextResult
+│   ├── rendering.py                  # description_html + [DoD]
+│   ├── plane_client.py               # Plane API client
+│   ├── github_client.py              # GitHub API client（stdlib only）
+│   ├── kickoff.py                    # Development Kickoff orchestrator
+│   ├── cli_kickoff.py                # Development Kickoff CLI
+│   ├── cli_create_plane_issue.py     # Plane issue create CLI
+│   ├── cli_e2e_dry_run.py            # E2E dry-run CLI
+│   ├── cli_plane_discover.py         # Plane discovery CLI
+│   ├── dotenv.py                     # .env auto-loader
+│   ├── e2e_dry_run.py                # E2E dry-run library
+│   ├── e2e_live.py                   # E2E live library
+│   ├── prompt_templates.py           # LLM prompt templates
+│   └── providers/
+│       ├── __init__.py
+│       └── openai_provider.py        # OpenAI-compatible LLM provider
+├── tests/
+│   ├── test_phase1_system_first.py   # Phase 1B tests
+│   ├── test_phase1_ai_parser.py      # Phase 1A tests
+│   ├── test_phase1c_openai_provider.py
+│   ├── test_phase1d_e2e_dry_run.py   # Phase 1D tests
+│   ├── test_phase2.py               # Phase 2 tests
+│   ├── test_kickoff.py              # Development Kickoff tests (37)
+│   └── test_dotenv.py               # dotenv tests
 └── .opencode/                        # OpenCode runtime 設定
     ├── setup.sh
     ├── mcp.sh
