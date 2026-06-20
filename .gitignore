@@ -1,0 +1,17 @@
+# Secrets
+.env
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OpenCode tooling & agent config (separate project with its own git)
+.opencode/
+
+# Architecture / planning docs (not part of app source)
+docs/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
