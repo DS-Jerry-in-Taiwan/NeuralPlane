@@ -368,6 +368,87 @@ class TestRenderDescriptionHtml(unittest.TestCase):
 # =====================================================================
 
 
+class TestPlaneWebUrl(unittest.TestCase):
+    """Test web_base_url auto-detect and URL construction."""
+
+    def setUp(self) -> None:
+        self._original_env = dict(os.environ)
+
+    def tearDown(self) -> None:
+        os.environ.clear()
+        os.environ.update(self._original_env)
+
+    def test_cloud_auto_detect_web_url(self) -> None:
+        """🟢 正面測試: Plane Cloud 自動推斷 web_base_url."""
+        os.environ.update({
+            "PLANE_API_KEY": "key",
+            "PLANE_WORKSPACE_SLUG": "ws",
+            "PLANE_PROJECT_ID": "p",
+            "PLANE_DEFAULT_STATE_ID": "s",
+            "PLANE_BASE_URL": "https://api.plane.so",
+        })
+        cfg = PlaneConfig.from_env()
+        self.assertEqual(cfg.web_base_url, "https://app.plane.so")
+
+    def test_web_base_url_env_override(self) -> None:
+        """🟢 正面測試: PLANE_WEB_BASE_URL 可覆蓋."""
+        os.environ.update({
+            "PLANE_API_KEY": "key",
+            "PLANE_WORKSPACE_SLUG": "ws",
+            "PLANE_PROJECT_ID": "p",
+            "PLANE_DEFAULT_STATE_ID": "s",
+            "PLANE_BASE_URL": "https://api.plane.so",
+            "PLANE_WEB_BASE_URL": "https://custom.plane.example.com",
+        })
+        cfg = PlaneConfig.from_env()
+        self.assertEqual(cfg.web_base_url, "https://custom.plane.example.com")
+
+    def test_self_hosted_web_url_same_as_base(self) -> None:
+        """🟢 正面測試: Self-hosted 不觸發取代."""
+        os.environ.update({
+            "PLANE_API_KEY": "key",
+            "PLANE_WORKSPACE_SLUG": "ws",
+            "PLANE_PROJECT_ID": "p",
+            "PLANE_DEFAULT_STATE_ID": "s",
+            "PLANE_BASE_URL": "https://plane.example.com",
+        })
+        cfg = PlaneConfig.from_env()
+        # Self-hosted: web_base_url should default to base_url when no "api." prefix
+        self.assertEqual(cfg.web_base_url, "https://plane.example.com")
+
+    def test_issue_url_uses_web_base_url(self) -> None:
+        """🎯 正確性測試: create_work_item result.url 使用 web_base_url."""
+        import json
+        from unittest.mock import MagicMock, patch
+
+        cfg = PlaneConfig(
+            base_url="https://api.plane.so",
+            web_base_url="https://app.plane.so",
+            api_key="test",
+            workspace_slug="ws",
+            project_id="proj",
+            default_state_id="state",
+        )
+        mock_resp = {"id": "uuid-abc", "name": "Task", "sequence_id": 42}
+
+        def fake_urlopen(req, timeout=None):
+            f = MagicMock()
+            f.status = 201
+            f.read.return_value = json.dumps(mock_resp).encode()
+            f.__enter__ = MagicMock(return_value=f)
+            f.__exit__ = MagicMock(return_value=False)
+            return f
+
+        task = TaskDraft(title="T", description="D", dod=["D"])
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            result = PlaneClient(cfg).create_work_item(task, dry_run=False)
+
+        self.assertTrue(result.success)
+        self.assertIsNotNone(result.url)
+        self.assertTrue(result.url.startswith("https://app.plane.so/"))
+        self.assertIn("ws/projects/proj/work-items/uuid-abc", result.url)
+
+
 class TestPlaneConfigFromEnv(unittest.TestCase):
     """Test class: PlaneConfig environment variable loading."""
 
