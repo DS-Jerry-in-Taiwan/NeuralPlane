@@ -33,6 +33,7 @@ from neuralplane.rendering import render_description_html
 # ----------------------------------------------------------------------
 
 _ENV_BASE_URL = "PLANE_BASE_URL"
+_ENV_WEB_BASE_URL = "PLANE_WEB_BASE_URL"
 _ENV_API_KEY = "PLANE_API_KEY"
 _ENV_WORKSPACE_SLUG = "PLANE_WORKSPACE_SLUG"
 _ENV_PROJECT_ID = "PLANE_PROJECT_ID"
@@ -97,6 +98,10 @@ class PlaneConfig:
         UUID of the target Plane project.
     default_state_id:
         UUID of the initial state for created work items.
+    web_base_url:
+        Base of the Plane Web UI (default auto-detected from ``base_url``).
+        For Plane Cloud: ``https://api.plane.so`` → ``https://app.plane.so``.
+        May be overridden via ``PLANE_WEB_BASE_URL`` for self-hosted instances.
     """
 
     base_url: str
@@ -104,6 +109,7 @@ class PlaneConfig:
     workspace_slug: str
     project_id: str
     default_state_id: str
+    web_base_url: str = ""
 
     @classmethod
     def from_env(cls) -> PlaneConfig:
@@ -130,8 +136,15 @@ class PlaneConfig:
         if not base_url:
             base_url = _DEFAULT_BASE_URL
 
+        # --- web_base_url (Plane Cloud Web UI) --------------------------------
+        web_base = os.environ.get(_ENV_WEB_BASE_URL, "").strip()
+        if not web_base:
+            # Auto-detect: replace "api.plane.so" with "app.plane.so"
+            web_base = base_url.replace("api.plane.so", "app.plane.so")
+
         return cls(
             base_url=base_url,
+            web_base_url=web_base,
             api_key=values[_ENV_API_KEY],
             workspace_slug=values[_ENV_WORKSPACE_SLUG],
             project_id=values[_ENV_PROJECT_ID],
@@ -359,7 +372,7 @@ class PlaneClient:
         work_item_url: str | None = None
         if item_id:
             work_item_url = (
-                f"{self._config.base_url}/"
+                f"{self._config.web_base_url}/"
                 f"{self._config.workspace_slug}/"
                 f"projects/{self._config.project_id}/"
                 f"work-items/{item_id}"
