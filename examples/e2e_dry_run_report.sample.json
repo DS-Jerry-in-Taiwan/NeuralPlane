@@ -1,0 +1,26 @@
+{
+  "dry_run": true,
+  "external_api_calls": 0,
+  "task_draft": {
+    "title": "建立會員登入 API",
+    "description": "建立會員登入端點，支援 bcrypt 密碼驗證、JWT access token 簽發與基本 rate limiting。",
+    "dod": [
+      "密碼驗證必須使用 bcrypt hash，不可明文比對。",
+      "登入成功後必須簽發有效期限為 24 小時的 JWT access token。",
+      "必須包含登入成功、密碼錯誤、使用者不存在三種情境的測試。",
+      "API 必須實作基本 rate limiting 以防止暴力破解。"
+    ],
+    "priority": "high",
+    "assignee_suggestions": [],
+    "labels": ["auth", "api"]
+  },
+  "plane_endpoint": "https://api.plane.so/api/v1/workspaces/[dry-run-workspace]/projects/[dry-run-project]/work-items/",
+  "plane_payload": {
+    "name": "建立會員登入 API",
+    "description_html": "<p>建立會員登入端點，支援 bcrypt 密碼驗證、JWT access token 簽發與基本 rate limiting。</p>\n<h2>[DoD]</h2>\n<ul><li>密碼驗證必須使用 bcrypt hash，不可明文比對。</li><li>登入成功後必須簽發有效期限為 24 小時的 JWT access token。</li><li>必須包含登入成功、密碼錯誤、使用者不存在三種情境的測試。</li><li>API 必須實作基本 rate limiting 以防止暴力破解。</li></ul>",
+    "state": "[dry-run-state]",
+    "priority": "high",
+    "labels": ["auth", "api"]
+  },
+  "warnings": []
+}

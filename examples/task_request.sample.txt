@@ -1,0 +1,1 @@
+建立會員登入 API。需要使用 bcrypt 驗證密碼，登入成功後簽發 24 小時有效的 JWT access token。請包含登入成功、密碼錯誤、使用者不存在三種情境的測試，並加入基本 rate limiting。

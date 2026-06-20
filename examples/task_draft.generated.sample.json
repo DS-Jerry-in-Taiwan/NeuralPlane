@@ -1,0 +1,13 @@
+{
+  "title": "建立會員登入 API",
+  "description": "建立會員登入端點，支援 bcrypt 密碼驗證、JWT access token 簽發與基本 rate limiting。",
+  "dod": [
+    "密碼驗證必須使用 bcrypt hash，不可明文比對。",
+    "登入成功後必須簽發有效期限為 24 小時的 JWT access token。",
+    "必須包含登入成功、密碼錯誤、使用者不存在三種情境的測試。",
+    "API 必須實作基本 rate limiting 以防止暴力破解。"
+  ],
+  "priority": "high",
+  "labels": ["auth", "api"],
+  "assignee_suggestions": []
+}

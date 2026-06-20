@@ -1,0 +1,12 @@
+{
+  "title": "實作會員登入 API",
+  "description": "建立會員登入端點，支援 bcrypt 密碼驗證與 JWT token 簽發。包含錯誤處理與 Rate Limiting。",
+  "dod": [
+    "密碼驗證必須使用 bcrypt hash，不可明文比對。",
+    "JWT access token 有效期限必須為 24 小時。",
+    "登入成功、密碼錯誤、使用者不存在三種情境必須有測試。"
+  ],
+  "priority": "high",
+  "assignee_suggestions": [],
+  "labels": ["auth", "api"]
+}
